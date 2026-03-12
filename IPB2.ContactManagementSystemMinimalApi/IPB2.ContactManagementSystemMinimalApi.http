@@ -1,0 +1,6 @@
+@IPB2.ContactManagementSystemMinimalApi_HostAddress = http://localhost:5027
+
+GET {{IPB2.ContactManagementSystemMinimalApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,6 @@
+@IPB2.ContactManagementSystemWebApi_HostAddress = http://localhost:5223
+
+GET {{IPB2.ContactManagementSystemWebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
