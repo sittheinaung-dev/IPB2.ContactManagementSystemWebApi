@@ -1,4 +1,4 @@
-﻿using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
+using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using IPB2.ContactManagementSystemWebApi.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
     {
         private readonly AppDbContext _db;
 
-        public ContactController(AppDbContext db)
+        public ContactController()
         {
-            _db = db;
+            _db = new AppDbContext();
         }
 
         [HttpPost("Add")]
@@ -23,13 +23,21 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .AnyAsync(x => x.CategoryId == dto.CategoryId && x.IsDelete == false);
 
             if (!categoryExists)
-                return BadRequest("Category not found");
+                return BadRequest(new ContactCreateResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Category not found"
+                });
 
             var emailExists = await _db.Contacts
                 .AnyAsync(x => x.Email == dto.Email && x.IsDelete == false);
 
             if (emailExists)
-                return BadRequest("Email already exists");
+                return BadRequest(new ContactCreateResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Email already exists"
+                });
 
             var contact = new Contact
             {
@@ -46,6 +54,7 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
             return Ok(new ContactCreateResponseDto
             {
                 ContactId = contact.ContactId,
+                IsSuccess = true,
                 Message = "Contact added successfully"
             });
         }
@@ -54,19 +63,19 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
         public async Task<IActionResult> UpdateContact(int id, ContactUpdateRequestDto dto)
         {
             if (id != dto.ContactId)
-                return BadRequest("ID mismatch");
+                return BadRequest(new ContactUpdateResponseDto { IsSuccess = false, Message = "ID mismatch" });
 
             var contact = await _db.Contacts
                 .FirstOrDefaultAsync(x => x.ContactId == id && x.IsDelete == false);
 
             if (contact == null)
-                return NotFound("Contact not found");
+                return NotFound(new ContactUpdateResponseDto { IsSuccess = false, Message = "Contact not found" });
 
             var categoryExists = await _db.Categories
                 .AnyAsync(x => x.CategoryId == dto.CategoryId && x.IsDelete == false);
 
             if (!categoryExists)
-                return BadRequest("Category not found");
+                return BadRequest(new ContactUpdateResponseDto { IsSuccess = false, Message = "Category not found" });
 
             var emailExists = await _db.Contacts
                 .AnyAsync(x => x.Email == dto.Email &&
@@ -74,7 +83,7 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                                x.IsDelete == false);
 
             if (emailExists)
-                return BadRequest("Email already used by another contact");
+                return BadRequest(new ContactUpdateResponseDto { IsSuccess = false, Message = "Email already used by another contact" });
 
             contact.ContactName = dto.ContactName;
             contact.Email = dto.Email;
@@ -83,7 +92,7 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
 
             await _db.SaveChangesAsync();
 
-            return Ok("Contact updated successfully");
+            return Ok(new ContactUpdateResponseDto { IsSuccess = true, Message = "Contact updated successfully" });
         }
 
         [HttpDelete("Delete{id}")]
@@ -93,13 +102,13 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .FirstOrDefaultAsync(x => x.ContactId == id && x.IsDelete == false);
 
             if (contact == null)
-                return NotFound("Contact not found");
+                return NotFound(new ContactDeleteResponseDto { IsSuccess = false, Message = "Contact not found" });
 
             contact.IsDelete = true;
 
             await _db.SaveChangesAsync();
 
-            return Ok("Contact deleted successfully");
+            return Ok(new ContactDeleteResponseDto { IsSuccess = true, Message = "Contact deleted successfully" });
         }
 
         [HttpGet("AllContacts")]
@@ -119,10 +128,15 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                         CategoryId = contact.CategoryId ?? 0,
                         CategoryName = category.CategoryName
                     })
-                .OrderBy(x => x.ContactName)
+                .OrderBy(x => x.ContactId)
                 .ToListAsync();
 
-            return Ok(contacts);
+            return Ok(new ContactListResponseDto
+            {
+                IsSuccess = true,
+                Message = "Contacts retrieved successfully",
+                Contacts = contacts
+            });
         }
 
         // Get Contact By Id
@@ -144,9 +158,14 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .FirstOrDefaultAsync();
 
             if (contact == null)
-                return NotFound("Contact not found");
+                return NotFound(new ContactSingleResponseDto { IsSuccess = false, Message = "Contact not found" });
 
-            return Ok(contact);
+            return Ok(new ContactSingleResponseDto
+            {
+                IsSuccess = true,
+                Message = "Contact retrieved successfully",
+                Contact = contact
+            });
         }
     }
 }

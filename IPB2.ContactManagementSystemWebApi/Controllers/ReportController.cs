@@ -1,4 +1,4 @@
-﻿using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
+using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using IPB2.ContactManagementSystemWebApi.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
     {
         private readonly AppDbContext _db;
 
-        public ReportController(AppDbContext db)
+        public ReportController()
         {
-            _db = db;
+            _db = new AppDbContext();
         }
 
         [HttpGet("View Contact Pagination")]
@@ -39,8 +39,10 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new
+            return Ok(new ContactPaginationResponseDto
             {
+                IsSuccess = true,
+                Message = "Contacts retrieved successfully",
                 TotalCount = totalCount,
                 PageNo = pageNo,
                 PageSize = pageSize,
@@ -57,7 +59,7 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                     .FirstOrDefaultAsync(x => x.CategoryId == categoryId && x.IsDelete == false);
 
                 if (category == null)
-                    return NotFound("Category not found");
+                    return NotFound(new ContactsByCategoryReportDto { IsSuccess = false, Message = "Category not found" });
 
                 var contacts = await _db.Contacts
                     .Where(x => x.CategoryId == categoryId && x.IsDelete == false)
@@ -70,14 +72,16 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                         CategoryId = x.CategoryId ?? 0,
                         CategoryName = category.CategoryName
                     })
-                    .OrderBy(x => x.ContactName)
+                    .OrderBy(x => x.ContactId)
                     .ToListAsync();
 
-                return Ok(new
+                return Ok(new ContactsByCategoryReportDto
                 {
+                    IsSuccess = true,
+                    Message = "Contacts by category retrieved successfully",
                     CategoryId = category.CategoryId,
                     CategoryName = category.CategoryName,
-                    TotalContacts = contacts.Count,
+                    ContactCount = contacts.Count,
                     Contacts = contacts
                 });
             }
@@ -85,10 +89,11 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
             {
                 var categories = await _db.Categories
                     .Where(x => x.IsDelete == false)
-                    .Select(category => new
+                    .Select(category => new ContactsByCategoryReportDto
                     {
                         CategoryId = category.CategoryId,
                         CategoryName = category.CategoryName,
+                        ContactCount = _db.Contacts.Count(x => x.CategoryId == category.CategoryId && x.IsDelete == false),
                         Contacts = _db.Contacts
                             .Where(x => x.CategoryId == category.CategoryId && x.IsDelete == false)
                             .Select(x => new ContactResponseDto
@@ -100,12 +105,17 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                                 CategoryId = x.CategoryId ?? 0,
                                 CategoryName = category.CategoryName
                             })
-                            .OrderBy(x => x.ContactName)
+                            .OrderBy(x => x.ContactId)
                             .ToList()
                     })
                     .ToListAsync();
 
-                return Ok(categories);
+                return Ok(new ContactsByCategoryListReportDto
+                {
+                    IsSuccess = true,
+                    Message = "All categories with contacts retrieved successfully",
+                    Categories = categories
+                });
             }
         }
 
@@ -113,7 +123,7 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
         public async Task<IActionResult> SearchContacts([FromQuery] string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest("Keyword is required");
+                return BadRequest(new ContactSearchResponseDto { IsSuccess = false, Message = "Keyword is required" });
 
             var results = await _db.Contacts
                 .Where(x => x.IsDelete == false &&
@@ -132,11 +142,13 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                         CategoryId = contact.CategoryId ?? 0,
                         CategoryName = category.CategoryName
                     })
-                .OrderBy(x => x.ContactName)
+                .OrderBy(x => x.ContactId)
                 .ToListAsync();
 
-            return Ok(new
+            return Ok(new ContactSearchResponseDto
             {
+                IsSuccess = true,
+                Message = "Search executed successfully",
                 Keyword = keyword,
                 TotalResults = results.Count,
                 Results = results

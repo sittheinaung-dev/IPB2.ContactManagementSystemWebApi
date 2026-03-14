@@ -1,4 +1,4 @@
-﻿using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
+using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using IPB2.ContactManagementSystemWebApi.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +11,9 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
     {
         private readonly AppDbContext _db;
 
-        public CategoryController(AppDbContext db)
+        public CategoryController()
         {
-            _db = db;
+            _db = new AppDbContext();
         }
 
         [HttpPost("Add")]
@@ -23,7 +23,11 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .AnyAsync(x => x.CategoryName == dto.CategoryName && x.IsDelete == false);
 
             if (categoryExists)
-                return BadRequest("Category name already exists");
+                return BadRequest(new CategoryCreateResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Category name already exists"
+                });
 
             var category = new Category
             {
@@ -34,9 +38,10 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
             _db.Categories.Add(category);
             await _db.SaveChangesAsync();
 
-            return Ok(new
+            return Ok(new CategoryCreateResponseDto
             {
                 CategoryId = category.CategoryId,
+                IsSuccess = true,
                 Message = "Category added successfully"
             });
         }
@@ -45,13 +50,13 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
         public async Task<IActionResult> UpdateCategory(int id, CategoryUpdateRequestDto dto)
         {
             if (id != dto.CategoryId)
-                return BadRequest("ID mismatch");
+                return BadRequest(new CategoryUpdateResponseDto { IsSuccess = false, Message = "ID mismatch" });
 
             var category = await _db.Categories
                 .FirstOrDefaultAsync(x => x.CategoryId == id && x.IsDelete == false);
 
             if (category == null)
-                return NotFound("Category not found");
+                return NotFound(new CategoryUpdateResponseDto { IsSuccess = false, Message = "Category not found" });
 
             var categoryExists = await _db.Categories
                 .AnyAsync(x => x.CategoryName == dto.CategoryName &&
@@ -59,12 +64,12 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                               x.IsDelete == false);
 
             if (categoryExists)
-                return BadRequest("Category name already exists");
+                return BadRequest(new CategoryUpdateResponseDto { IsSuccess = false, Message = "Category name already exists" });
 
             category.CategoryName = dto.CategoryName;
             await _db.SaveChangesAsync();
 
-            return Ok("Category updated successfully");
+            return Ok(new CategoryUpdateResponseDto { IsSuccess = true, Message = "Category updated successfully" });
         }
 
         [HttpDelete("Delete/{id}")]
@@ -74,18 +79,18 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .FirstOrDefaultAsync(x => x.CategoryId == id && x.IsDelete == false);
 
             if (category == null)
-                return NotFound("Category not found");
+                return NotFound(new CategoryDeleteResponseDto { IsSuccess = false, Message = "Category not found" });
 
             var hasContacts = await _db.Contacts
                 .AnyAsync(x => x.CategoryId == id && x.IsDelete == false);
 
             if (hasContacts)
-                return BadRequest("Cannot delete category that has contacts. Please reassign contacts first.");
+                return BadRequest(new CategoryDeleteResponseDto { IsSuccess = false, Message = "Cannot delete category that has contacts. Please reassign contacts first." });
 
             category.IsDelete = true;
             await _db.SaveChangesAsync();
 
-            return Ok("Category deleted successfully");
+            return Ok(new CategoryDeleteResponseDto { IsSuccess = true, Message = "Category deleted successfully" });
         }
 
         [HttpGet("List")]
@@ -102,7 +107,12 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(categories);
+            return Ok(new CategoryListResponseDto
+            {
+                IsSuccess = true,
+                Message = "Categories retrieved successfully",
+                Categories = categories
+            });
         }
 
         // Get Category with Contacts
@@ -113,7 +123,11 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 .FirstOrDefaultAsync(x => x.CategoryId == id && x.IsDelete == false);
 
             if (category == null)
-                return NotFound("Category not found");
+                return NotFound(new CategoryWithContactsResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Category not found"
+                });
 
             var contacts = await _db.Contacts
                 .Where(x => x.CategoryId == id && x.IsDelete == false)
@@ -128,8 +142,10 @@ namespace IPB2.ContactManagementSystemWebApi.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new
+            return Ok(new CategoryWithContactsResponseDto
             {
+                IsSuccess = true,
+                Message = "Category and contacts retrieved successfully",
                 CategoryId = category.CategoryId,
                 CategoryName = category.CategoryName,
                 ContactCount = contacts.Count,
