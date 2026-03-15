@@ -1,158 +1,69 @@
 using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
-using IPB2.ContactManagementSystemWebApi.Dtos;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using IPB2.ContactManagementSystemWebApi.Features.Contact;
+using IPB2.ContactManagementSystemWebApi.Features.Category;
+using IPB2.ContactManagementSystemWebApi.Features.Report;
+using IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
+using IPB2.ContactManagementSystemWebApi.Features.Category.Models;
+using IPB2.ContactManagementSystemWebApi.Features.Report.Models;
+using Microsoft.AspNetCore.Mvc;
 
-namespace IPB2.ContactManagementSystemWebApi.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ReportController : ControllerBase
-    {
-        private readonly AppDbContext _db;
+var builder = WebApplication.CreateBuilder(args);
 
-        public ReportController()
-        {
-            _db = new AppDbContext();
-        }
+// Add services to the container.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        [HttpGet("View Contact Pagination")]
-        public async Task<IActionResult> GetContacts(int pageNo = 1, int pageSize = 10)
-        {
-            var query = _db.Contacts
-                .Where(x => x.IsDelete == false)
-                .Include(x => x.Category);
+builder.Services.AddScoped<ContactFeature>();
+builder.Services.AddScoped<CategoryFeature>();
+builder.Services.AddScoped<ReportFeature>();
 
-            var totalCount = await query.CountAsync();
+var app = builder.Build();
 
-            var contacts = await query
-                .Skip((pageNo - 1) * pageSize)
-                .Take(pageSize)
-                .Select(x => new ContactResponseDto
-                {
-                    ContactId = x.ContactId,
-                    ContactName = x.ContactName,
-                    Email = x.Email,
-                    Phone = x.Phone,
-                    CategoryId = x.CategoryId ?? 0,
-                    CategoryName = x.Category.CategoryName
-                })
-                .ToListAsync();
+// Contact Endpoints
+app.MapGet("/api/contact", async (ContactFeature feature) => await feature.GetAllAsync());
+app.MapGet("/api/contact/{id}", async (int id, ContactFeature feature) => {
+    var response = await feature.GetByIdAsync(id);
+    return response.IsSuccess ? Results.Ok(response) : Results.NotFound(response);
+});
+app.MapPost("/api/contact", async (CreateContactRequest request, ContactFeature feature) => {
+    var response = await feature.CreateAsync(request);
+    return response.IsSuccess ? Results.Ok(response) : Results.BadRequest(response);
+});
+app.MapPut("/api/contact", async (UpdateContactRequest request, ContactFeature feature) => {
+    var response = await feature.UpdateAsync(request);
+    return response.IsSuccess ? Results.Ok(response) : Results.BadRequest(response);
+});
+app.MapDelete("/api/contact/{id}", async (int id, ContactFeature feature) => {
+    var response = await feature.DeleteAsync(id);
+    return response.IsSuccess ? Results.Ok(response) : Results.BadRequest(response);
+});
 
-            return Ok(new ContactPaginationResponseDto
-            {
-                IsSuccess = true,
-                Message = "Contacts retrieved successfully",
-                TotalCount = totalCount,
-                PageNo = pageNo,
-                PageSize = pageSize,
-                Contacts = contacts
-            });
-        }
+// Category Endpoints
+app.MapGet("/api/category", async (CategoryFeature feature) => await feature.GetAllAsync());
+app.MapGet("/api/category/WithContacts/{id}", async (int id, CategoryFeature feature) => {
+    var response = await feature.GetWithContactsAsync(id);
+    return response.IsSuccess ? Results.Ok(response) : Results.NotFound(response);
+});
+app.MapPost("/api/category", async (CreateCategoryRequest request, CategoryFeature feature) => {
+    var response = await feature.CreateAsync(request);
+    return response.IsSuccess ? Results.Ok(response) : Results.BadRequest(response);
+});
+app.MapPut("/api/category", async (UpdateCategoryRequest request, CategoryFeature feature) => {
+    var response = await feature.UpdateAsync(request);
+    if (!response.IsSuccess) return response.Message == "Category not found" ? Results.NotFound(response) : Results.BadRequest(response);
+    return Results.Ok(response);
+});
+app.MapDelete("/api/category/{id}", async (int id, CategoryFeature feature) => {
+    var response = await feature.DeleteAsync(id);
+    if (!response.IsSuccess) return response.Message == "Category not found" ? Results.NotFound(response) : Results.BadRequest(response);
+    return Results.Ok(response);
+});
 
-        [HttpGet("ContactsByCategory")]
-        public async Task<IActionResult> GetContactsByCategory([FromQuery] int? categoryId = null)
-        {
-            if (categoryId.HasValue)
-            {
-                var category = await _db.Categories
-                    .FirstOrDefaultAsync(x => x.CategoryId == categoryId && x.IsDelete == false);
+// Report Endpoints
+app.MapGet("/api/report/paginated", async ([AsParameters] ContactPaginationRequest request, ReportFeature feature) => await feature.GetContactsPaginatedAsync(request));
+app.MapGet("/api/report/by-category", async ([AsParameters] ContactsByCategoryReportRequest request, ReportFeature feature) => await feature.GetContactsByCategoryAsync(request));
+app.MapGet("/api/report/all-categories", async (ReportFeature feature) => await feature.GetContactsByAllCategoriesAsync());
+app.MapGet("/api/report/search", async ([AsParameters] ContactSearchRequest request, ReportFeature feature) => await feature.SearchContactsAsync(request));
 
-                if (category == null)
-                    return NotFound(new ContactsByCategoryReportDto { IsSuccess = false, Message = "Category not found" });
-
-                var contacts = await _db.Contacts
-                    .Where(x => x.CategoryId == categoryId && x.IsDelete == false)
-                    .Select(x => new ContactResponseDto
-                    {
-                        ContactId = x.ContactId,
-                        ContactName = x.ContactName,
-                        Email = x.Email,
-                        Phone = x.Phone,
-                        CategoryId = x.CategoryId ?? 0,
-                        CategoryName = category.CategoryName
-                    })
-                    .OrderBy(x => x.ContactId)
-                    .ToListAsync();
-
-                return Ok(new ContactsByCategoryReportDto
-                {
-                    IsSuccess = true,
-                    Message = "Contacts by category retrieved successfully",
-                    CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName,
-                    ContactCount = contacts.Count,
-                    Contacts = contacts
-                });
-            }
-            else
-            {
-                var categories = await _db.Categories
-                    .Where(x => x.IsDelete == false)
-                    .Select(category => new ContactsByCategoryReportDto
-                    {
-                        CategoryId = category.CategoryId,
-                        CategoryName = category.CategoryName,
-                        ContactCount = _db.Contacts.Count(x => x.CategoryId == category.CategoryId && x.IsDelete == false),
-                        Contacts = _db.Contacts
-                            .Where(x => x.CategoryId == category.CategoryId && x.IsDelete == false)
-                            .Select(x => new ContactResponseDto
-                            {
-                                ContactId = x.ContactId,
-                                ContactName = x.ContactName,
-                                Email = x.Email,
-                                Phone = x.Phone,
-                                CategoryId = x.CategoryId ?? 0,
-                                CategoryName = category.CategoryName
-                            })
-                            .OrderBy(x => x.ContactId)
-                            .ToList()
-                    })
-                    .ToListAsync();
-
-                return Ok(new ContactsByCategoryListReportDto
-                {
-                    IsSuccess = true,
-                    Message = "All categories with contacts retrieved successfully",
-                    Categories = categories
-                });
-            }
-        }
-
-        [HttpGet("Search")]
-        public async Task<IActionResult> SearchContacts([FromQuery] string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest(new ContactSearchResponseDto { IsSuccess = false, Message = "Keyword is required" });
-
-            var results = await _db.Contacts
-                .Where(x => x.IsDelete == false &&
-                    (EF.Functions.Like(x.ContactName, $"%{keyword}%") ||
-                     EF.Functions.Like(x.Email, $"%{keyword}%") ||
-                     EF.Functions.Like(x.Phone, $"%{keyword}%")))
-                .Join(_db.Categories.Where(c => c.IsDelete == false),
-                    contact => contact.CategoryId,
-                    category => category.CategoryId,
-                    (contact, category) => new ContactResponseDto
-                    {
-                        ContactId = contact.ContactId,
-                        ContactName = contact.ContactName,
-                        Email = contact.Email,
-                        Phone = contact.Phone,
-                        CategoryId = contact.CategoryId ?? 0,
-                        CategoryName = category.CategoryName
-                    })
-                .OrderBy(x => x.ContactId)
-                .ToListAsync();
-
-            return Ok(new ContactSearchResponseDto
-            {
-                IsSuccess = true,
-                Message = "Search executed successfully",
-                Keyword = keyword,
-                TotalResults = results.Count,
-                Results = results
-            });
-        }
-    }
-}
+app.Run();

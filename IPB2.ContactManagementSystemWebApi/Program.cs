@@ -1,10 +1,19 @@
 using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
+using IPB2.ContactManagementSystemWebApi.Features.Contact;
+using IPB2.ContactManagementSystemWebApi.Features.Category;
+using IPB2.ContactManagementSystemWebApi.Features.Report;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ContactFeature>();
+builder.Services.AddScoped<CategoryFeature>();
+builder.Services.AddScoped<ReportFeature>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
