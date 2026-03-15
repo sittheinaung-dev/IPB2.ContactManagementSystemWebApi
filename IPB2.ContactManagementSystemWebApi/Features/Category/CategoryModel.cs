@@ -1,6 +1,4 @@
-using IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
-
-namespace IPB2.ContactManagementSystemWebApi.Features.Category.Models;
+namespace IPB2.ContactManagementSystemWebApi.Features.Category;
 
 public class CreateCategoryRequest
 {
@@ -53,5 +51,5 @@ public class CategoryWithContactsResponse
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public int ContactCount { get; set; }
-    public List<ContactResponse> Contacts { get; set; } = new();
+    public List<Contact.ContactResponse> Contacts { get; set; } = new();
 }

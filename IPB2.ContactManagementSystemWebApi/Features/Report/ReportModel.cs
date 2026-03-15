@@ -1,6 +1,4 @@
-using IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
-
-namespace IPB2.ContactManagementSystemWebApi.Features.Report.Models;
+namespace IPB2.ContactManagementSystemWebApi.Features.Report;
 
 public class ContactPaginationRequest
 {
@@ -15,7 +13,7 @@ public class ContactPaginationResponse
     public int TotalCount { get; set; }
     public int PageNo { get; set; }
     public int PageSize { get; set; }
-    public List<ContactResponse> Contacts { get; set; } = new();
+    public List<Contact.ContactResponse> Contacts { get; set; } = new();
 }
 
 public class ContactsByCategoryReportRequest
@@ -30,7 +28,7 @@ public class ContactsByCategoryReportResponse
     public int? CategoryId { get; set; }
     public string? CategoryName { get; set; }
     public int ContactCount { get; set; }
-    public List<ContactResponse> Contacts { get; set; } = new();
+    public List<Contact.ContactResponse> Contacts { get; set; } = new();
 }
 
 public class ContactsByCategoryListReportResponse
@@ -51,5 +49,5 @@ public class ContactSearchResponse
     public string Message { get; set; } = string.Empty;
     public string Keyword { get; set; } = string.Empty;
     public int TotalResults { get; set; }
-    public List<ContactResponse> Results { get; set; } = new();
+    public List<Contact.ContactResponse> Results { get; set; } = new();
 }

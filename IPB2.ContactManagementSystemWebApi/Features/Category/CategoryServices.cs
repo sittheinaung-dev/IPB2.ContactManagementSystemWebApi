@@ -1,15 +1,13 @@
 using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using Microsoft.EntityFrameworkCore;
-using IPB2.ContactManagementSystemWebApi.Features.Category.Models;
-using ContactModels = IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
 
 namespace IPB2.ContactManagementSystemWebApi.Features.Category;
 
-public class CategoryFeature
+public class CategoryServices
 {
     private readonly AppDbContext _db;
 
-    public CategoryFeature(AppDbContext db)
+    public CategoryServices(AppDbContext db)
     {
         _db = db;
     }
@@ -37,7 +35,7 @@ public class CategoryFeature
 
         var contacts = await _db.Contacts
             .Where(x => x.CategoryId == id && x.IsDelete == false)
-            .Select(x => new ContactModels.ContactResponse
+            .Select(x => new Contact.ContactResponse
             {
                 ContactId = x.ContactId,
                 ContactName = x.ContactName,
@@ -65,7 +63,7 @@ public class CategoryFeature
         if (exists)
             return new CreateCategoryResponse { IsSuccess = false, Message = "Category name already exists" };
 
-        var category = new Database.AppDbContextModels.Category
+        var category = new IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels.Category
         {
             CategoryName = request.CategoryName,
             IsDelete = false

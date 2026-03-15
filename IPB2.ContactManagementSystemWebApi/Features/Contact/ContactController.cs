@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
+using IPB2.ContactManagementSystemWebApi.Features.Contact;
 
 namespace IPB2.ContactManagementSystemWebApi.Features.Contact;
 
@@ -7,24 +7,24 @@ namespace IPB2.ContactManagementSystemWebApi.Features.Contact;
 [ApiController]
 public class ContactController : ControllerBase
 {
-    private readonly ContactFeature _contactFeature;
+    private readonly ContactServices _contactServices;
 
-    public ContactController(ContactFeature contactFeature)
+    public ContactController(ContactServices contactServices)
     {
-        _contactFeature = contactFeature;
+        _contactServices = contactServices;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetContacts()
     {
-        var response = await _contactFeature.GetAllAsync();
+        var response = await _contactServices.GetAllAsync();
         return Ok(response);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetContact(int id)
     {
-        var response = await _contactFeature.GetByIdAsync(id);
+        var response = await _contactServices.GetByIdAsync(id);
         if (!response.IsSuccess) return NotFound(response);
         return Ok(response);
     }
@@ -32,14 +32,14 @@ public class ContactController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateContact(CreateContactRequest request)
     {
-        var response = await _contactFeature.CreateAsync(request);
+        var response = await _contactServices.CreateAsync(request);
         return Ok(response);
     }
 
     [HttpPut]
     public async Task<IActionResult> UpdateContact(UpdateContactRequest request)
     {
-        var response = await _contactFeature.UpdateAsync(request);
+        var response = await _contactServices.UpdateAsync(request);
         if (!response.IsSuccess) return NotFound(response);
         return Ok(response);
     }
@@ -47,7 +47,7 @@ public class ContactController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteContact(int id)
     {
-        var response = await _contactFeature.DeleteAsync(id);
+        var response = await _contactServices.DeleteAsync(id);
         if (!response.IsSuccess) return NotFound(response);
         return Ok(response);
     }

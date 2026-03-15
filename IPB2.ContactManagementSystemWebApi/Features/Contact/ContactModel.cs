@@ -1,4 +1,4 @@
-namespace IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
+namespace IPB2.ContactManagementSystemWebApi.Features.Contact;
 
 public class CreateContactRequest
 {

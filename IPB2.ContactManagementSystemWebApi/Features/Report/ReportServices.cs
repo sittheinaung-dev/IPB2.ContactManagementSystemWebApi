@@ -1,15 +1,13 @@
 using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using Microsoft.EntityFrameworkCore;
-using IPB2.ContactManagementSystemWebApi.Features.Report.Models;
-using ContactModels = IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
 
 namespace IPB2.ContactManagementSystemWebApi.Features.Report;
 
-public class ReportFeature
+public class ReportServices
 {
     private readonly AppDbContext _db;
 
-    public ReportFeature(AppDbContext db)
+    public ReportServices(AppDbContext db)
     {
         _db = db;
     }
@@ -25,7 +23,7 @@ public class ReportFeature
         var contacts = await query
             .Skip((request.PageNo - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(x => new ContactModels.ContactResponse
+            .Select(x => new Contact.ContactResponse
             {
                 ContactId = x.ContactId,
                 ContactName = x.ContactName,
@@ -59,7 +57,7 @@ public class ReportFeature
 
             var contacts = await _db.Contacts
                 .Where(x => x.CategoryId == request.CategoryId && x.IsDelete == false)
-                .Select(x => new ContactModels.ContactResponse
+                .Select(x => new Contact.ContactResponse
                 {
                     ContactId = x.ContactId,
                     ContactName = x.ContactName,
@@ -83,9 +81,6 @@ public class ReportFeature
         }
         else
         {
-            // The existing logic seems to return a list of reports if no categoryId is provided.
-            // I'll adapt the response model to handle this or keep it consistent.
-            // For now, I'll return an error or handle it as "All Categories" if I adjust the DTO.
             return new ContactsByCategoryReportResponse { IsSuccess = false, Message = "CategoryId is required for this report." };
         }
     }
@@ -101,7 +96,7 @@ public class ReportFeature
                 ContactCount = _db.Contacts.Count(x => x.CategoryId == category.CategoryId && x.IsDelete == false),
                 Contacts = _db.Contacts
                     .Where(x => x.CategoryId == category.CategoryId && x.IsDelete == false)
-                    .Select(x => new ContactModels.ContactResponse
+                    .Select(x => new Contact.ContactResponse
                     {
                         ContactId = x.ContactId,
                         ContactName = x.ContactName,
@@ -136,7 +131,7 @@ public class ReportFeature
             .Join(_db.Categories.Where(c => c.IsDelete == false),
                 contact => contact.CategoryId,
                 category => category.CategoryId,
-                (contact, category) => new ContactModels.ContactResponse
+                (contact, category) => new Contact.ContactResponse
                 {
                     ContactId = contact.ContactId,
                     ContactName = contact.ContactName,

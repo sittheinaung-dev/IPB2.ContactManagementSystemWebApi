@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using IPB2.ContactManagementSystemWebApi.Features.Category.Models;
+using IPB2.ContactManagementSystemWebApi.Features.Category;
 
 namespace IPB2.ContactManagementSystemWebApi.Features.Category;
 
@@ -7,24 +7,24 @@ namespace IPB2.ContactManagementSystemWebApi.Features.Category;
 [ApiController]
 public class CategoryController : ControllerBase
 {
-    private readonly CategoryFeature _categoryFeature;
+    private readonly CategoryServices _categoryServices;
 
-    public CategoryController(CategoryFeature categoryFeature)
+    public CategoryController(CategoryServices categoryServices)
     {
-        _categoryFeature = categoryFeature;
+        _categoryServices = categoryServices;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetCategories()
     {
-        var response = await _categoryFeature.GetAllAsync();
+        var response = await _categoryServices.GetAllAsync();
         return Ok(response);
     }
 
     [HttpGet("WithContacts/{id}")]
     public async Task<IActionResult> GetCategoryWithContacts(int id)
     {
-        var response = await _categoryFeature.GetWithContactsAsync(id);
+        var response = await _categoryServices.GetWithContactsAsync(id);
         if (!response.IsSuccess) return NotFound(response);
         return Ok(response);
     }
@@ -32,7 +32,7 @@ public class CategoryController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateCategory(CreateCategoryRequest request)
     {
-        var response = await _categoryFeature.CreateAsync(request);
+        var response = await _categoryServices.CreateAsync(request);
         if (!response.IsSuccess) return BadRequest(response);
         return Ok(response);
     }
@@ -40,7 +40,7 @@ public class CategoryController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> UpdateCategory(UpdateCategoryRequest request)
     {
-        var response = await _categoryFeature.UpdateAsync(request);
+        var response = await _categoryServices.UpdateAsync(request);
         if (!response.IsSuccess) return (response.Message == "Category not found") ? NotFound(response) : BadRequest(response);
         return Ok(response);
     }
@@ -48,7 +48,7 @@ public class CategoryController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCategory(int id)
     {
-        var response = await _categoryFeature.DeleteAsync(id);
+        var response = await _categoryServices.DeleteAsync(id);
         if (!response.IsSuccess) return (response.Message == "Category not found") ? NotFound(response) : BadRequest(response);
         return Ok(response);
     }

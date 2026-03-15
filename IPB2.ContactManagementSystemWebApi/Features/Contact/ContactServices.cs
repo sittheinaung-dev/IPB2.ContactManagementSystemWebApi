@@ -1,14 +1,13 @@
 using IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels;
 using Microsoft.EntityFrameworkCore;
-using IPB2.ContactManagementSystemWebApi.Features.Contact.Models;
 
 namespace IPB2.ContactManagementSystemWebApi.Features.Contact;
 
-public class ContactFeature
+public class ContactServices
 {
     private readonly AppDbContext _db;
 
-    public ContactFeature(AppDbContext db)
+    public ContactServices(AppDbContext db)
     {
         _db = db;
     }
@@ -58,7 +57,7 @@ public class ContactFeature
 
     public async Task<CreateContactResponse> CreateAsync(CreateContactRequest request)
     {
-        var contact = new Database.AppDbContextModels.Contact
+        var contact = new IPB2.ContactManagementSystemWebApi.Database.AppDbContextModels.Contact
         {
             ContactName = request.ContactName,
             Email = request.Email,
